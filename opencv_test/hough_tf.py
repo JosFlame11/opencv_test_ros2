@@ -84,11 +84,9 @@ class SubscriberNode(Node):
         
         # Detect and display lines
         frame_with_lines = self.detect_line(frame)
-        try:
-            cv2.imshow('Processed Frame', frame_with_lines)
-            cv2.waitKey(1)
-        except KeyboardInterrupt:
-            print("Shutting down Camera")
+        cv2.imshow('Processed Frame', frame_with_lines)
+        cv2.waitKey(1)
+
 
     def detect_line(self, frame):
         # Convert image to grayscale
@@ -139,12 +137,17 @@ def main(args=None):
 
     # Create and spin the node
     image_subscriber = SubscriberNode()
-    rclpy.spin(image_subscriber)
 
-    # Shutdown when done
-    image_subscriber.destroy_node()
-    rclpy.shutdown()
-    cv2.destroyAllWindows()
+    try:
+        rclpy.spin(image_subscriber)
+    except KeyboardInterrupt:
+        print("Shutting down...")
+    finally:
+        # Shutdown when done
+        if rclpy.ok():
+            image_subscriber.destroy_node()
+            rclpy.shutdown()
+        cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     main()

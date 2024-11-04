@@ -21,12 +21,18 @@ class SubscriberNode(Node):
         self.bridge = CvBridge()
 
         # Initialize ROI settings with six points
-        self.roi_top_left = [0.2, 0.1]
-        self.roi_top_right = [0.8, 0.1]
-        self.roi_middle_left = [0.1, 0.5]    # New middle left point
-        self.roi_middle_right = [0.9, 0.5]   # New middle right point
+        self.roi_top_left = [0.3, 0.55]
+        self.roi_top_right = [0.7, 0.55]
+        self.roi_middle_left = [0.0, 1.0]    # New middle left point
+        self.roi_middle_right = [1.0, 1.0]   # New middle right point
         self.roi_bottom_left = [0.0, 1.0]
         self.roi_bottom_right = [1.0, 1.0]
+
+        """This values apply for simulation only
+        when dealing with the real robot, adjust at needed.
+        Also if wanted to convert this values to the array just multiply the 
+        width (first column) * value, and height (second column) * value"""    
+
 
         # Create sliders to adjust the ROI dynamically
         self.init_roi_gui()
@@ -83,8 +89,9 @@ class SubscriberNode(Node):
             return
         
         # Detect and display lines
-        frame_with_lines = self.detect_line(frame)
+        frame_with_lines, masked = self.detect_line(frame)
         cv2.imshow('Processed Frame', frame_with_lines)
+        cv2.imshow('ROI frame', masked)
         cv2.waitKey(1)
 
 
@@ -93,10 +100,10 @@ class SubscriberNode(Node):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
         # Apply Gaussian blur to reduce noise
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        blurred = cv2.GaussianBlur(gray, (3, 3), 0)
         
         # Apply Canny edge detector
-        edges = cv2.Canny(blurred, 50, 150)
+        edges = cv2.Canny(blurred, 100, 200)
         
         # Define the region of interest (ROI) dynamically from sliders
         height, width = edges.shape
@@ -120,7 +127,7 @@ class SubscriberNode(Node):
         cv2.polylines(frame, roi_points, isClosed=True, color=(0, 0, 255), thickness=2)
 
         # Detect lines using Hough Transform
-        lines = cv2.HoughLinesP(masked_edges, 1, np.pi/180, 50, minLineLength=5, maxLineGap=50)
+        lines = cv2.HoughLinesP(masked_edges, 1, np.pi/180, 25, minLineLength=100, maxLineGap=50)
         
         # Draw the detected lines on the original image
         if lines is not None:
@@ -128,7 +135,7 @@ class SubscriberNode(Node):
                 x1, y1, x2, y2 = line[0]
                 cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 0), 5)
         
-        return frame
+        return frame, masked_edges
         
 
 
